@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TON Coin Collector - Telegram Bot</title>
+    <style>
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .telegram-container {
+            max-width: 100%;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+        }
+
+        .sidebar {
+            width: 80px;
+            background-color: #2a2e3d;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 20px;
+        }
+
+        .menu-button {
+            width: 50px;
+            height: 50px;
+            background-color: #3e4357;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .menu-button:hover {
+            background-color: #4e5368;
+            transform: scale(1.05);
+        }
+
+        .menu-button.active {
+            background-color: #0088cc;
+        }
+
+        .game-container {
+            flex-grow: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .game-board {
+            width: 300px;
+            height: 500px;
+            background-color: #e0e0e0;
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .player {
+            width: 40px;
+            height: 40px;
+            background-color: #0088cc;
+            border-radius: 50%;
+            position: absolute;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            border: 3px solid white;
+        }
+
+        .coin {
+            width: 30px;
+            height: 30px;
+            background: radial-gradient(circle at 30% 30%, #ffd700, #e6b800);
+            border-radius: 50%;
+            position: absolute;
+            transform: translate(-50%, -50%);
+            z-index: 5;
+            border: 2px solid #ffcc00;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .bomb {
+            background: radial-gradient(circle at 30% 30%, #ff4444, #cc0000);
+            border: 2px solid #ff6666;
+        }
+
+        .powerup {
+            background: radial-gradient(circle at 30% 30%, #00cc66, #00aa55);
+            border: 2px solid #00dd77;
+            font-size: 18px;
+        }
+
+        .game-stats {
+            display: flex;
+            justify-content: space-between;
+            width: 300px;
+            margin-bottom: 15px;
+        }
+
+        .stat-box {
+            background-color: white;
+            padding: 10px 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #0088cc;
+        }
+
+        .game-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 20;
+            display: none;
+        }
+
+        .start-button {
+            background-color: #0088cc;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .start-button:hover {
+            background-color: #0077bb;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="telegram-container">
+        <div class="sidebar">
+            <div class="menu-button active" id="game-button">
+                <span style="font-size: 24px;">🕹️</span>
+            </div>
+            <div class="menu-button">
+                <span style="font-size: 24px;">⚙️</span>
+            </div>
+            <div class="menu-button">
+                <span style="font-size: 24px;">🏆</span>
+            </div>
+        </div>
+
+        <div class="game-container">
+            <div class="game-stats">
+                <div class="stat-box">
+                    <div class="stat-label">Score</div>
+                    <div class="stat-value" id="score">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Time</div>
+                    <div class="stat-value" id="time">60</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">High Score</div>
+                    <div class="stat-value" id="high-score">0</div>
+                </div>
+            </div>
+
+            <div class="game-board" id="game-board">
+                <div class="player" id="player"></div>
+                <div class="game-message" id="game-message"></div>
+            </div>
+
+            <button class="start-button" id="start-btn">Start Game</button>
+        </div>
+    </div>
+
+    <script>
+        // Game elements
+        const gameBoard = document.getElementById('game-board');
+        const player = document.getElementById('player');
+        const scoreDisplay = document.getElementById('score');
+        const timeDisplay = document.getElementById('time');
+        const highScoreDisplay = document.getElementById('high-score');
+        const startBtn = document.getElementById('start-btn');
+        const gameMessage = document.getElementById('game-message');
+
+        // Game variables
+        let score = 0;
+        let timeLeft = 60;
+        let highScore = localStorage.getItem('tonCoinHighScore') || 0;
+        let gameInterval;
+        let timeInterval;
+        let isGameRunning = false;
+        let coins = [];
+        let playerX = gameBoard.offsetWidth / 2;
+        let playerY = gameBoard.offsetHeight / 2;
+        let scoreMultiplier = 1;
+        let powerupActive = false;
+        let powerupEndTime = 0;
+
+        // Initialize game
+        function initGame() {
+            highScoreDisplay.textContent = highScore;
+
+            // Set player initial position
+            updatePlayerPosition();
+
+            // Event listeners
+            gameBoard.addEventListener('mousemove', movePlayer);
+            gameBoard.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const rect = gameBoard.getBoundingClientRect();
+                movePlayer({
+                    clientX: touch.clientX - rect.left,
+                    clientY: touch.clientY - rect.top
+                });
+            });
+
+            startBtn.addEventListener('click', startGame);
+        }
+
+        // Move player
+        function movePlayer(e) {
+            if (isGameRunning) {
+                playerX = e.clientX;
+                playerY = e.clientY;
+                updatePlayerPosition();
+            }
+        }
+
+        function updatePlayerPosition() {
+            const maxX = gameBoard.offsetWidth;
+            const maxY = gameBoard.offsetHeight;
+
+            playerX = Math.max(20, Math.min(playerX, maxX - 20));
+            playerY = Math.max(20, Math.min(playerY, maxY - 20));
+
+            player.style.left = `${playerX}px`;
+            player.style.top = `${playerY}px`;
+        }
+
+        // Start game
+        function startGame() {
+            if (isGameRunning) {
+                resetGame();
+            }
+
+            isGameRunning = true;
+            score = 0;
+            timeLeft = 60;
+            scoreMultiplier = 1;
+            powerupActive = false;
+
+            scoreDisplay.textContent = score;
+            timeDisplay.textContent = timeLeft;
+
+            startBtn.textContent = 'Restart';
+            gameMessage.style.display = 'none';
+
+            // Clear existing coins
+            document.querySelectorAll('.coin').forEach(coin => coin.remove());
+            coins = [];
+
+            // Start game loop
+            gameInterval = setInterval(createCoin, 1000);
+            setTimeout(() => setInterval(createBomb, 2000), 2000);
+            setTimeout(() => setInterval(createPowerup, 10000), 5000);
+
+            // Start timer
+            timeInterval = setInterval(updateTimer, 1000);
+
+            // Initial coins
+            for (let i = 0; i < 3; i++) {
+                setTimeout(createCoin, i * 300);
+            }
+        }
+
+        // Create coin
+        function createCoin() {
+            if (!isGameRunning) return;
+
+            const coin = document.createElement('div');
+            coin.className = 'coin';
+
+            // Random position
+            const x = Math.random() * (gameBoard.offsetWidth - 40) + 20;
+            const y = Math.random() * (gameBoard.offsetHeight - 40) + 20;
+
+            coin.style.left = `${x}px`;
+            coin.style.top = `${y}px`;
+
+            // Random value (1-3)
+            const value = Math.floor(Math.random() * 3) + 1;
+            coin.textContent = value;
+            coin.dataset.value = value;
+
+            gameBoard.appendChild(coin);
+            coins.push({
+                element: coin,
+                x: x,
+                y: y,
+                type: 'coin'
+            });
+
+            // Remove coin after some time
+            setTimeout(() => {
+                if (coin.parentNode) {
+                    removeCoin(coin, false);
+                }
+            }, 8000);
+        }
+
+        // Create bomb
+        function createBomb() {
+            if (!isGameRunning) return;
+
+            const bomb = document.createElement('div');
+            bomb.className = 'coin bomb';
+            bomb.textContent = '💣';
+
+            // Random position
+            const x = Math.random() * (gameBoard.offsetWidth - 40) + 20;
+            const y = Math.random() * (gameBoard.offsetHeight - 40) + 20;
+
+            bomb.style.left = `${x}px`;
+            bomb.style.top = `${y}px`;
+
+            gameBoard.appendChild(bomb);
+            coins.push({
+                element: bomb,
+                x: x,
+                y: y,
+                type: 'bomb'
+            });
+
+            // Remove bomb after some time
+            setTimeout(() => {
+                if (bomb.parentNode) {
+                    removeCoin(bomb, false);
+                }
+            }, 6000);
+        }
+
+        // Create powerup
+        function createPowerup() {
+            if (!isGameRunning) return;
+
+            const powerup = document.createElement('div');
+            powerup.className = 'coin powerup';
+            powerup.textContent = '⭐';
+
+            // Random position
+            const x = Math.random() * (gameBoard.offsetWidth - 40) + 20;
+            const y = Math.random() * (gameBoard.offsetHeight - 40) + 20;
+
+            powerup.style.left = `${x}px`;
+            powerup.style.top = `${y}px`;
+
+            gameBoard.appendChild(powerup);
+            coins.push({
+                element: powerup,
+                x: x,
+                y: y,
+                type: 'powerup'
+            });
+
+            // Remove powerup after some time
+            setTimeout(() => {
+                if (powerup.parentNode) {
+                    removeCoin(powerup, false);
+                }
+            }, 5000);
+        }
+
+        // Remove coin
+        function removeCoin(coinElement, collected) {
+            const index = coins.findIndex(coin => coin.element === coinElement);
+            if (index !== -1) {
+                coins.splice(index, 1);
+            }
+
+            if (coinElement.parentNode) {
+                if (collected) {
+                    // Add collection effect
+                    coinElement.style.transition = 'all 0.3s ease';
+                    coinElement.style.transform = 'translate(-50%, -50%) scale(1.5)';
+                    coinElement.style.opacity = '0';
+
+                    setTimeout(() => {
+                        if (coinElement.parentNode) {
+                            gameBoard.removeChild(coinElement);
+                        }
+                    }, 300);
+                } else {
+                    gameBoard.removeChild(coinElement);
+                }
+            }
+        }
+
+        // Check collision
+        function checkCollision() {
+            const playerRect = player.getBoundingClientRect();
+            const playerCenter = {
+                x: playerRect.left + playerRect.width / 2,
+                y: playerRect.top + playerRect.height / 2
+            };
+
+            const playerRadius = playerRect.width / 2;
+
+            coins.forEach(coin => {
+                const coinRect = coin.element.getBoundingClientRect();
+                const coinCenter = {
+                    x: coinRect.left + coinRect.width / 2,
+                    y: coinRect.top + coinRect.height / 2
+                };
+
+                const distance = Math.sqrt(
+                    Math.pow(playerCenter.x - coinCenter.x, 2) +
+                    Math.pow(playerCenter.y - coinCenter.y, 2)
+                );
+
+                const minDistance = playerRadius + (coinRect.width / 2);
+
+                if (distance < minDistance) {
+                    handleCollision(coin);
+                }
+            });
+        }
+
+        // Handle collision
+        function handleCollision(coin) {
+            switch (coin.type) {
+                case 'coin':
+                    const value = parseInt(coin.element.dataset.value);
+                    score += value * scoreMultiplier;
+                    scoreDisplay.textContent = score;
+                    break;
+
+                case 'bomb':
+                    score = Math.max(0, score - 5);
+                    scoreDisplay.textContent = score;
+                    break;
+
+                case 'powerup':
+                    scoreMultiplier = 2;
+                    powerupActive = true;
+                    powerupEndTime = Date.now() + 10000; // 10 seconds
+                    break;
+            }
+
+            removeCoin(coin.element, true);
+        }
+
+        // Update timer
+        function updateTimer() {
+            timeLeft--;
+            timeDisplay.textContent = timeLeft;
+
+            // Check powerup duration
+            if (powerupActive && Date.now() >= powerupEndTime) {
+                scoreMultiplier = 1;
+                powerupActive = false;
+            }
+
+            if (timeLeft <= 0) {
+                endGame();
+            }
+        }
+
+        // End game
+        function endGame() {
+            isGameRunning = false;
+            clearInterval(gameInterval);
+            clearInterval(timeInterval);
+
+            // Update high score
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('tonCoinHighScore', highScore);
+                highScoreDisplay.textContent = highScore;
+
+                gameMessage.textContent = `Game Over!\nNew High Score: ${highScore}`;
+            } else {
+                gameMessage.textContent = `Game Over!\nScore: ${score}\nHigh Score: ${highScore}`;
+            }
+
+            gameMessage.style.display = 'block';
+
+            // Clear all coins
+            coins.forEach(coin => {
+                if (coin.element.parentNode) {
+                    gameBoard.removeChild(coin.element);
+                }
+            });
+            coins = [];
+
+            startBtn.textContent = 'Play Again';
+        }
+
+        // Reset game
+        function resetGame() {
+            clearInterval(gameInterval);
+            clearInterval(timeInterval);
+
+            // Clear all coins
+            coins.forEach(coin => {
+                if (coin.element.parentNode) {
+                    gameBoard.removeChild(coin.element);
+                }
+            });
+            coins = [];
+        }
+
+        // Game loop
+        function gameLoop() {
+            if (isGameRunning) {
+                checkCollision();
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        // Start the game loop
+        gameLoop();
+
+        // Initialize the game
+        initGame();
+    </script>
+</body>
+</html>
