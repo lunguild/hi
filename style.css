@@ -1,0 +1,40 @@
+body{
+  min-height: 70vh;
+  background: url('');
+  background-position: center;
+  background-size: cover;
+}
+.header{
+  background: black;
+  border-radius: 50px;
+  font-size: 48px;
+  margin: 60px;
+  text-align: center;
+}
+.header a{
+  color: white;
+  text-decoration: none;
+  margin: 45px;
+}
+.header a:hover{
+  color: black;
+  background: white;
+  border-radius: 50px;
+}
+.divader{
+  background: black;
+  border-radius: 50px;
+  font-size: 48px;
+  margin: 60px;
+  text-align: center;
+}
+.divader a{
+  color: white;
+  text-decoration: none;
+  margin: 45px;
+}
+.divader a:hover{
+  color: black;
+  background: white;
+  border-radius: 50px;
+}
